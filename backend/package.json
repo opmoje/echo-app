@@ -1,0 +1,20 @@
+{
+  "name": "instagram-chatbot-backend",
+  "version": "1.0.0",
+  "description": "Instagram chatbot demo backend with OAuth and echo functionality",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "keywords": ["instagram", "chatbot", "oauth", "webhook"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "crypto": "^1.0.1"
+  }
+}
