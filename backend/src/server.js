@@ -10,6 +10,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+// Для webhook endpoint сохраняем raw body для проверки подписи
+app.use('/webhook', express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
+
+// Для остальных endpoints обычный JSON парсинг
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
