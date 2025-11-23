@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
 # Цвета для вывода
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -51,7 +55,7 @@ echo -e "${YELLOW}[4/5]${NC} Установка зависимостей..."
 
 if [ ! -d "backend/node_modules" ]; then
     echo -e "${BLUE}Устанавливаю backend зависимости...${NC}"
-    cd backend && npm install && cd ..
+    cd "$SCRIPT_DIR/backend" && npm install && cd "$SCRIPT_DIR"
     echo -e "${GREEN}✅ Backend зависимости установлены${NC}"
 else
     echo -e "${GREEN}✅ Backend зависимости уже установлены${NC}"
@@ -59,7 +63,7 @@ fi
 
 if [ ! -d "frontend/node_modules" ]; then
     echo -e "${BLUE}Устанавливаю frontend зависимости...${NC}"
-    cd frontend && npm install && cd ..
+    cd "$SCRIPT_DIR/frontend" && npm install && cd "$SCRIPT_DIR"
     echo -e "${GREEN}✅ Frontend зависимости установлены${NC}"
 else
     echo -e "${GREEN}✅ Frontend зависимости уже установлены${NC}"
@@ -101,18 +105,18 @@ trap cleanup SIGINT SIGTERM
 
 # Запускаем backend
 echo -e "${BLUE}🚀 Запуск Backend (http://localhost:3000)...${NC}"
-cd backend && npm run dev &
+cd "$SCRIPT_DIR/backend" && npm run dev &
 BACKEND_PID=$!
-cd ..
+cd "$SCRIPT_DIR"
 
 # Даем время backend запуститься
 sleep 3
 
 # Запускаем frontend
 echo -e "${BLUE}🎨 Запуск Frontend (http://localhost:5173)...${NC}"
-cd frontend && npm run dev &
+cd "$SCRIPT_DIR/frontend" && npm run dev &
 FRONTEND_PID=$!
-cd ..
+cd "$SCRIPT_DIR"
 
 # Даем время frontend запуститься
 sleep 3

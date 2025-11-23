@@ -155,7 +155,7 @@ ngrok http 3000
 2. Выберите **Instagram** в выпадающем списке
 3. Нажмите **"Edit Subscription"**
 4. Заполните:
-   - **Callback URL:** `https://your-ngrok-url.ngrok.io/webhook`
+   - **Callback URL:** `https://kirby-plutonic-stiffly.ngrok-free.dev/webhook`
    - **Verify Token:** значение из вашего `.env` (WEBHOOK_VERIFY_TOKEN)
 5. Выберите поля подписки:
    - ✓ `messages`
