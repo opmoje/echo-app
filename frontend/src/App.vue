@@ -100,7 +100,7 @@ import axios from 'axios';
 export default {
   name: 'App',
   setup() {
-    const apiUrl = ref('http://localhost:3000');
+    const apiUrl = ref(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000');
     const loading = ref(true);
     const connecting = ref(false);
     const authenticated = ref(false);

@@ -1,0 +1,50 @@
+# Render.com Blueprint для автоматического деплоя
+# Документация: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend Web Service
+  - type: web
+    name: instaai-backend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        generateValue: true
+      - key: INSTAGRAM_APP_ID
+        sync: false  # Нужно будет установить вручную в Render Dashboard
+      - key: INSTAGRAM_APP_SECRET
+        sync: false  # Нужно будет установить вручную в Render Dashboard
+      - key: WEBHOOK_VERIFY_TOKEN
+        sync: false  # Нужно будет установить вручную в Render Dashboard
+      - key: FRONTEND_URL
+        value: https://instaai-frontend.onrender.com  # Обновите после создания frontend
+      - key: INSTAGRAM_REDIRECT_URI
+        value: https://instaai-backend.onrender.com/auth/callback  # Обновите на свой URL
+
+  # Frontend Static Site
+  - type: web
+    name: instaai-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    pullRequestPreviewsEnabled: true
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://instaai-backend.onrender.com  # Обновите на свой backend URL
