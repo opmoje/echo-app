@@ -7,7 +7,14 @@ import webhookRoutes from './routes/webhook.js';
 dotenv.config();
 
 const app = express();
+
+// Render может использовать Unix socket или TCP port
 const PORT = process.env.PORT || 3000;
+const isSocket = typeof PORT === 'string' && PORT.includes('/');
+
+console.log('Environment PORT:', process.env.PORT);
+console.log('Is Unix Socket:', isSocket);
+console.log('Will listen on:', PORT);
 
 // Middleware
 // Для webhook endpoint сохраняем raw body для проверки подписи
@@ -88,11 +95,16 @@ app.use((req, res) => {
 });
 
 // Запуск сервера
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('='.repeat(50));
-  console.log(`🚀 Instagram Chatbot Backend running on port ${PORT}`);
+  if (isSocket) {
+    console.log(`🚀 Instagram Chatbot Backend running on Unix socket`);
+    console.log(`📍 Socket: ${PORT}`);
+  } else {
+    console.log(`🚀 Instagram Chatbot Backend running on port ${PORT}`);
+    console.log(`🔗 API: http://localhost:${PORT}`);
+  }
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 API: http://localhost:${PORT}`);
   console.log(`🌐 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log('='.repeat(50));
   
@@ -112,6 +124,25 @@ app.listen(PORT, () => {
   } else {
     console.log('✅ All required environment variables are set');
   }
+});
+
+// Обработка ошибок сервера
+server.on('error', (error) => {
+  console.error('Server error:', error);
+  if (error.code === 'EACCES') {
+    console.error('Permission denied. Check if PORT is correctly set.');
+    console.error('PORT value:', process.env.PORT);
+  }
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, closing server...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 export default app;
