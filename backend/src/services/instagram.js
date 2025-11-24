@@ -16,8 +16,6 @@ class InstagramService {
       'instagram_basic',
       'instagram_manage_messages',
       'pages_show_list',          // Нужен для получения списка Pages
-      'pages_manage_metadata',
-      'pages_messaging',
       'business_management'       // Нужен для Instagram Business API
     ].join(',');
 
