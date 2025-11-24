@@ -37,9 +37,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS для frontend
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:5173');
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'https://instaai-frontend.onrender.com',
+    process.env.FRONTEND_URL
+  ].filter(Boolean);
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
