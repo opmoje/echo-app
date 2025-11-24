@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   backend:
+    image: reg.wbcheap.ru/echo-app-backend:v0.0.1
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -27,6 +28,7 @@ services:
       start_period: 5s
 
   frontend:
+    image: reg.wbcheap.ru/echo-app-frontend:v0.0.1
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -35,13 +37,13 @@ services:
     container_name: instabot-frontend
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8080:3000"
     networks:
       - instabot-network
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 3s
       retries: 3

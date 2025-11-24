@@ -21,34 +21,33 @@ ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 # Build the application
 RUN npm run build
 
-# Production stage - Nginx
-FROM nginx:alpine AS runner
+# Production stage - Node.js with serve
+FROM node:18-alpine AS runner
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Install serve package globally
+RUN npm install -g serve && \
+    npm cache clean --force
 
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Set working directory
+WORKDIR /app
 
 # Create non-root user
-RUN addgroup -g 1001 -S nginx-app && \
-    adduser -S -D -H -u 1001 -h /usr/share/nginx/html -s /sbin/nologin -G nginx-app -g nginx-app nginx-app && \
-    chown -R nginx-app:nginx-app /usr/share/nginx/html && \
-    chown -R nginx-app:nginx-app /var/cache/nginx && \
-    chown -R nginx-app:nginx-app /var/log/nginx && \
-    chown -R nginx-app:nginx-app /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R nginx-app:nginx-app /var/run/nginx.pid
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S -u 1001 -h /app nodejs && \
+    chown -R nodejs:nodejs /app
+
+# Copy built assets from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
 # Switch to non-root user
-USER nginx-app
+USER nodejs
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+    CMD node -e "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start serve to serve static files
+CMD ["serve", "-s", "dist", "-l", "3000"]
