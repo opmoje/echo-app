@@ -8,13 +8,20 @@ dotenv.config();
 
 const app = express();
 
-// Render может использовать Unix socket или TCP port
-const PORT = process.env.PORT || 3000;
-const isSocket = typeof PORT === 'string' && PORT.includes('/');
+// Render всегда использует числовой порт для Web Service
+// Если PORT не число, используем дефолтный порт
+let PORT = 3000;
+if (process.env.PORT) {
+  const parsedPort = parseInt(process.env.PORT, 10);
+  if (!isNaN(parsedPort) && parsedPort > 0) {
+    PORT = parsedPort;
+  } else {
+    console.warn('⚠️ PORT env var is not a valid number, using default 3000');
+    console.warn('PORT value:', process.env.PORT);
+  }
+}
 
-console.log('Environment PORT:', process.env.PORT);
-console.log('Is Unix Socket:', isSocket);
-console.log('Will listen on:', PORT);
+console.log('Final PORT:', PORT);
 
 // Middleware
 // Для webhook endpoint сохраняем raw body для проверки подписи
@@ -97,13 +104,7 @@ app.use((req, res) => {
 // Запуск сервера
 const server = app.listen(PORT, () => {
   console.log('='.repeat(50));
-  if (isSocket) {
-    console.log(`🚀 Instagram Chatbot Backend running on Unix socket`);
-    console.log(`📍 Socket: ${PORT}`);
-  } else {
-    console.log(`🚀 Instagram Chatbot Backend running on port ${PORT}`);
-    console.log(`🔗 API: http://localhost:${PORT}`);
-  }
+  console.log(`🚀 Instagram Chatbot Backend running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 Frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   console.log('='.repeat(50));
