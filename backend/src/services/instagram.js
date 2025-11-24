@@ -16,7 +16,8 @@ class InstagramService {
       'instagram_basic',
       'instagram_manage_messages',
       'pages_show_list',          // Нужен для получения списка Pages
-      'business_management'       // Нужен для Instagram Business API
+      'business_management',       // Нужен для Instagram Business API
+      'pages_read_engagement',    // Нужен для получения данных о взаимодействии с постами
     ].join(',');
 
     return `https://www.facebook.com/v18.0/dialog/oauth?` +

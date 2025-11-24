@@ -40,6 +40,7 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:5173',
     'https://instaai-frontend.onrender.com',
+    'https://instabot.wbcheap.ru',
     process.env.FRONTEND_URL
   ].filter(Boolean);
   
