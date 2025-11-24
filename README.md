@@ -287,6 +287,67 @@ func processMessages() {
                      └──────────────┘
 ```
 
+## 🐳 Деплой в Docker Swarm
+
+Для продакшен деплоя с использованием Docker Swarm и Nginx Proxy Manager:
+
+📖 **[Полная инструкция по Docker деплою](DOCKER_DEPLOY.md)**
+
+### Краткая инструкция:
+
+1. **Создайте сеть:**
+```bash
+docker network create --driver overlay --attachable shared-network
+```
+
+2. **Создайте файл `.env` с переменными окружения**
+
+3. **Соберите образы:**
+```bash
+docker build -t instabot-backend:latest ./backend
+docker build --build-arg VITE_BACKEND_URL=https://api.instabot.wbcheap.ru -t instabot-frontend:latest ./frontend
+```
+
+4. **Деплой:**
+```bash
+docker stack deploy -c docker-stack.yml instabot
+```
+
+5. **Настройте Nginx Proxy Manager** для доменов `instabot.wbcheap.ru` и `api.instabot.wbcheap.ru`
+
+## 🚀 Деплой на Render.com
+
+Для деплоя приложения на Render.com следуйте подробной инструкции:
+
+📖 **[Полная инструкция по деплою](RENDER_DEPLOY.md)**
+
+### ⚠️ Настройка Facebook OAuth
+
+После деплоя нужно настроить Facebook App:
+
+- 📘 **[Для старого интерфейса Facebook](FACEBOOK_OAUTH_SETUP.md)** (с Instagram Basic Display)
+- 🆕 **[Для нового интерфейса Facebook 2024](FACEBOOK_OAUTH_NEW_INTERFACE.md)** (с "Настройка API для входа в Instagram")
+
+```
+
+2. **Создайте Blueprint на Render.com:**
+   - Зарегистрируйтесь на https://render.com
+   - New → Blueprint → Выберите репозиторий
+   - Render автоматически найдет `render.yaml`
+
+3. **Настройте переменные окружения:**
+   - `INSTAGRAM_APP_ID`
+   - `INSTAGRAM_APP_SECRET`
+   - `WEBHOOK_VERIFY_TOKEN`
+
+4. **Обновите Instagram App настройки:**
+   - Redirect URI: `https://ваш-backend.onrender.com/auth/callback`
+   - Webhook URL: `https://ваш-backend.onrender.com/webhook`
+
+**Важно:** На бесплатном tier backend "засыпает" после 15 минут. Перед тестированием откройте `/health` endpoint чтобы "разбудить" сервер.
+
+См. [RENDER_DEPLOY.md](RENDER_DEPLOY.md) для полных инструкций и troubleshooting.
+
 ## 📝 Заметки
 
 - **Токены хранятся в памяти** - при перезапуске нужна повторная авторизация
