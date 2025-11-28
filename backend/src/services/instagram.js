@@ -13,11 +13,10 @@ class InstagramService {
    */
   getAuthorizationURL(appId, redirectUri) {
     const scopes = [
-      'pages_manage_metadata',
       'instagram_basic',
       'instagram_manage_messages',
       'pages_show_list',          // Нужен для получения списка Pages
-      'pages_read_engagement',    // Нужен для получения данных о взаимодействии с постами
+      'pages_read_engagement', 
     ].join(',');
 
     return `https://www.facebook.com/v24.0/dialog/oauth?` +
