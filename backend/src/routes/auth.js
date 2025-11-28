@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/login', (req, res) => {
   try {
     const authUrl = instagramService.getAuthorizationURL(
-      process.env.INSTAGRAM_APP_ID,
+      process.env.FACEBOOK_APP_ID,
       process.env.INSTAGRAM_REDIRECT_URI
     );
 
@@ -49,8 +49,8 @@ router.get('/callback', async (req, res) => {
     // Обмениваем code на access token
     const credentials = await instagramService.exchangeCodeForToken(
       code,
-      process.env.INSTAGRAM_APP_ID,
-      process.env.INSTAGRAM_APP_SECRET,
+      process.env.FACEBOOK_APP_ID,
+      process.env.FACEBOOK_APP_SECRET,
       process.env.INSTAGRAM_REDIRECT_URI
     );
 

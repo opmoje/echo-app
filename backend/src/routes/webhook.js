@@ -44,30 +44,48 @@ router.post('/', async (req, res) => {
     const signature = req.headers['x-hub-signature-256'];
     
     // Верификация подписи
-    if (signature && process.env.INSTAGRAM_APP_SECRET) {
-      console.log('🔐 Verifying webhook signature...');
-      console.log('📝 Received signature:', signature);
-      
-      // Используем raw body для проверки подписи!
-      const expectedSignature = 'sha256=' + crypto
-        .createHmac('sha256', process.env.INSTAGRAM_APP_SECRET)
-        .update(req.rawBody || JSON.stringify(req.body))
-        .digest('hex');
-      
-      console.log('🔑 Expected signature:', expectedSignature);
-      console.log('✅ Signatures match:', signature === expectedSignature);
-
-      if (signature !== expectedSignature) {
-        console.error('❌ Invalid signature!');
-        console.error('📄 Raw body length:', req.rawBody?.length || 'N/A');
-        console.error('🔍 First 100 chars of raw body:', req.rawBody?.substring(0, 100) || 'N/A');
-        return res.sendStatus(403);
-      }
-      
-      console.log('✅ Signature verified successfully!');
-    } else {
-      console.warn('⚠️  No signature verification (missing signature or app secret)');
+    console.log('🔐 Verifying webhook signature...');
+    console.log('📝 Received signature:', signature);
+    
+    // Проверяем наличие rawBody
+    if (!req.rawBody) {
+      console.error('❌ rawBody is missing! This means middleware is not configured correctly.');
+      console.error('📄 Body type:', typeof req.body);
+      console.error('📄 Body content:', JSON.stringify(req.body));
+      return res.sendStatus(403);
     }
+    
+    console.log('📄 Raw body length:', req.rawBody.length);
+    console.log('🔍 Raw body content:', req.rawBody);
+    
+    // Используем rawBodyBuffer (Buffer) для вычисления подписи
+    // Facebook вычисляет HMAC на основе сырых байтов, не строки
+    const bodyToVerify = req.rawBodyBuffer || req.rawBody;
+    
+    // ВАЖНО: Очищаем App Secret от возможных пробелов и переносов строк
+    const appSecret = process.env.INSTAGRAM_APP_SECRET.trim();
+    
+    console.log('🔑 Using Buffer:', !!req.rawBodyBuffer);
+    console.log('🔑 App Secret (trimmed) length:', appSecret.length);
+    console.log('🔑 App Secret first/last chars:', `${appSecret[0]}...${appSecret[appSecret.length-1]}`);
+    
+    const hmac = crypto.createHmac('sha256', appSecret);
+    hmac.update(bodyToVerify);
+    const computedHash = hmac.digest('hex');
+    const expectedSignature = 'sha256=' + computedHash;
+    
+    console.log('🔑 Computed hash:', computedHash);
+    console.log('🔑 Expected signature:', expectedSignature);
+    console.log('✅ Signatures match:', signature === expectedSignature);
+
+    if (signature !== expectedSignature) {
+      console.error('❌ Invalid signature!');
+      console.error('🔧 Debug: App Secret length:', process.env.INSTAGRAM_APP_SECRET?.length || 0);
+      console.error('🔧 Debug: App Secret first 4 chars:', process.env.INSTAGRAM_APP_SECRET?.substring(0, 4) || 'N/A');
+      return res.sendStatus(403);
+    }
+    
+    console.log('✅ Signature verified successfully!');
 
     console.log('📦 Webhook event received:', JSON.stringify(req.body, null, 2));
 

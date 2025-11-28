@@ -24,15 +24,15 @@ if (process.env.PORT) {
 console.log('Final PORT:', PORT);
 
 // Middleware
-// Для webhook endpoint сохраняем raw body для проверки подписи
-app.use('/webhook', express.json({
-  verify: (req, res, buf) => {
+// ВАЖНО: Сохраняем raw body для всех JSON запросов (нужно для проверки webhook подписи)
+app.use(express.json({
+  verify: (req, res, buf, encoding) => {
+    // Сохраняем и буфер, и строку для отладки
+    req.rawBodyBuffer = buf;
     req.rawBody = buf.toString('utf8');
   }
 }));
 
-// Для остальных endpoints обычный JSON парсинг
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS для frontend
@@ -123,7 +123,8 @@ const server = app.listen(PORT, () => {
   
   // Проверяем наличие необходимых переменных окружения
   const requiredEnvVars = [
-    'INSTAGRAM_APP_ID',
+    'FACEBOOK_APP_ID',
+    'FACEBOOK_APP_SECRET',
     'INSTAGRAM_APP_SECRET',
     'WEBHOOK_VERIFY_TOKEN'
   ];

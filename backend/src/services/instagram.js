@@ -3,7 +3,7 @@ import axios from 'axios';
 class InstagramService {
   constructor() {
     this.baseURL = 'https://graph.instagram.com';
-    this.graphBaseURL = 'https://graph.facebook.com/v18.0';
+    this.graphBaseURL = 'https://graph.facebook.com/v24.0';
     this.accessToken = null;
     this.instagramAccountId = null;
   }
@@ -13,14 +13,14 @@ class InstagramService {
    */
   getAuthorizationURL(appId, redirectUri) {
     const scopes = [
+      'pages_manage_metadata',
       'instagram_basic',
       'instagram_manage_messages',
       'pages_show_list',          // Нужен для получения списка Pages
-      'business_management',       // Нужен для Instagram Business API
       'pages_read_engagement',    // Нужен для получения данных о взаимодействии с постами
     ].join(',');
 
-    return `https://www.facebook.com/v18.0/dialog/oauth?` +
+    return `https://www.facebook.com/v24.0/dialog/oauth?` +
       `client_id=${appId}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scopes)}` +
@@ -139,6 +139,22 @@ class InstagramService {
    */
   async sendMessage(recipientId, message) {
     try {
+      const typingResponse = await axios.post(
+        `${this.graphBaseURL}/me/messages`,
+        {
+          recipient: { id: recipientId },
+          "sender_action":"typing_on"
+        },
+        {
+          params: {
+            access_token: this.accessToken
+          }
+        }
+      );
+      console.log('📄 Typing Response:', JSON.stringify(typingResponse.data, null, 2));
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       const response = await axios.post(
         `${this.graphBaseURL}/me/messages`,
         {
@@ -164,30 +180,142 @@ class InstagramService {
    */
   async handleWebhook(data) {
     try {
+      console.log('\n📨 Processing webhook data...');
+      
       // Проверяем что это сообщение от Instagram
       if (data.object !== 'instagram') {
+        console.log('⏭️  Not an Instagram object, skipping');
         return;
       }
 
       for (const entry of data.entry) {
+        console.log('\n📋 Processing entry:', JSON.stringify({
+          id: entry.id,
+          time: entry.time,
+          messagingCount: entry.messaging?.length || 0
+        }, null, 2));
+
         for (const messaging of entry.messaging || []) {
-          // Обрабатываем только входящие сообщения
-          if (messaging.message && !messaging.message.is_echo) {
-            const senderId = messaging.sender.id;
-            const messageText = messaging.message.text;
+          console.log('\n🔍 Analyzing messaging event:', JSON.stringify(messaging, null, 2));
+          
+          // Определяем тип события
+          const eventType = this.getEventType(messaging);
+          console.log('📍 Event type:', eventType);
+          
+          // Извлекаем sender ID (может быть в разных местах)
+          const senderId = this.extractSenderId(messaging, entry);
+          console.log('👤 Sender ID:', senderId || 'NOT FOUND');
+          
+          // Если нет sender ID, пропускаем
+          if (!senderId) {
+            console.warn('⚠️  Cannot process event without sender ID');
+            continue;
+          }
 
-            console.log(`Received message from ${senderId}: ${messageText}`);
-
-            // Echo функция - отправляем сообщение обратно
-            await this.sendMessage(senderId, messageText);
-            
-            console.log(`Echoed message back to ${senderId}`);
+          // Обрабатываем разные типы событий
+          switch (eventType) {
+            case 'message':
+              await this.handleMessageEvent(messaging, senderId);
+              break;
+            case 'message_edit':
+              await this.handleMessageEditEvent(messaging, senderId);
+              break;
+            case 'postback':
+              console.log('📬 Postback event detected (not implemented yet)');
+              break;
+            case 'reaction':
+              console.log('❤️  Reaction event detected (not implemented yet)');
+              break;
+            default:
+              console.log(`⏭️  Unknown event type: ${eventType}`);
           }
         }
       }
     } catch (error) {
-      console.error('Error handling webhook:', error);
+      console.error('❌ Error handling webhook:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Определяет тип события webhook
+   */
+  getEventType(messaging) {
+    if (messaging.message) return 'message';
+    if (messaging.message_edit) return 'message_edit';
+    if (messaging.postback) return 'postback';
+    if (messaging.reaction) return 'reaction';
+    return 'unknown';
+  }
+
+  /**
+   * Извлекает sender ID из разных мест в webhook
+   */
+  extractSenderId(messaging, entry) {
+    // Стандартное место
+    if (messaging.sender?.id) {
+      return messaging.sender.id;
+    }
+    
+    // Альтернативные места (на случай, если структура отличается)
+    if (messaging.from?.id) {
+      return messaging.from.id;
+    }
+    
+    // Для некоторых событий sender может быть в entry.id
+    // Но это Instagram Business Account ID, не user ID
+    // Поэтому не используем entry.id как sender
+    
+    return null;
+  }
+
+  /**
+   * Обработка обычного сообщения
+   */
+  async handleMessageEvent(messaging, senderId) {
+    try {
+      // Пропускаем echo сообщения (наши собственные)
+      if (messaging.message.is_echo) {
+        console.log('↩️  Echo message, skipping');
+        return;
+      }
+
+      const messageText = messaging.message.text;
+      console.log(`\n💬 Received message from ${senderId}: "${messageText}"`);
+
+      if (!this.accessToken) {
+        console.error('❌ No access token available, cannot send reply');
+        return;
+      }
+
+      // Echo функция - отправляем сообщение обратно
+      console.log(`📤 Sending echo reply to ${senderId}...`);
+      await this.sendMessage(senderId, messageText);
+      console.log(`✅ Successfully sent echo to ${senderId}`);
+    } catch (error) {
+      console.error('❌ Error handling message event:', error);
+    }
+  }
+
+  /**
+   * Обработка редактирования сообщения
+   */
+  async handleMessageEditEvent(messaging, senderId) {
+    try {
+      const editData = messaging.message_edit;
+      console.log(`\n✏️  Message edit event from ${senderId}:`, JSON.stringify(editData, null, 2));
+      
+      // num_edit: 0 означает, что это первая версия сообщения
+      // Это странное поведение Instagram API - иногда обычные сообщения приходят как message_edit
+      if (editData.num_edit === 0) {
+        console.log('⚠️  num_edit is 0 - this might be a regular message sent as edit event');
+        console.log('💡 This is a known Instagram API quirk');
+      }
+      
+      // Мы не отвечаем на события редактирования
+      console.log('⏭️  Message edit events are not processed (no reply sent)');
+    } catch (error) {
+      console.error('❌ Error handling message edit event:', error);
     }
   }
 }
